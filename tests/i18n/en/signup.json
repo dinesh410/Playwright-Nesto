@@ -1,0 +1,29 @@
+{
+  "firstName": "First name",
+  "lastName": "Last name",
+  "phoneNumber": "Phone number",
+  "province": "Province of purchase",
+  "email": "Email",
+  "password": "Password",
+  "confirmPassword": "Confirm password",
+  "submitButton": "Create your account",
+  "heading": "Create a nesto account",
+  "passwordRequirement": "Password must be between 12 and 32 characters and contain one uppercase letter, one lowercase letter and one number.",
+  "loginLink": "Log in",
+  "termsOfService": "Terms of Service",
+  "privacyPolicy": "Privacy Policy",
+  "alreadyHaveAccount": "Already have an account?",
+  "partnerContactCheckbox": "By checking this box, you agree to be contacted by nesto's partners for the purposes of offering you financial products. You agree to nesto sharing your mortgage information with its partners. You can opt-out at any time.",
+  "errors": {
+    "firstNameRequired": "The field is required",
+    "lastNameRequired": "The field is required",
+    "phoneNumberRequired": "Invalid value",
+    "provinceRequired": "The field is required",
+    "emailRequired": "Invalid email",
+    "passwordRequired": "Password must contain at least one uppercase letter, one lowercase letter and one number",
+    "passwordLengthTooShort": "Minimum of 12 letters required",
+    "passwordLengthTooLong": "Maximum of 32 letters required",
+    "confirmPasswordRequired": "Passwords do not match",
+    "weakPasswordErrorMessage": "Something went wrong! Please try again and if you continue to have trouble feel free to contact your advisor"
+  }
+}

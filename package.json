@@ -1,0 +1,20 @@
+{
+  "name": "playwright-nesto",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:dev:en": "ENV=dev LOCALE=en playwright test",
+    "test:dev:fr": "ENV=dev LOCALE=fr playwright test",
+    "test:qa:en": "ENV=qa LOCALE=en playwright test",
+    "test:qa:fr": "ENV=qa LOCALE=fr playwright test"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.1.0",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
+}
