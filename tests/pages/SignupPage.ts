@@ -1,6 +1,8 @@
 import { Page, Locator, expect } from "@playwright/test";
 import type { SignupFormData } from "../types/signup.types";
 import type { LocaleConfig } from "../types/locale.types";
+import type { ApiResponse } from "../utils/api-interceptor";
+import { verifyResponseBodyValue } from "../utils/test-helpers";
 
 /**
  * Test IDs that are consistent across all locales
@@ -448,5 +450,143 @@ export class SignupPage {
     }
 
     return false;
+  }
+
+  /**
+   * Verifies the signup API response
+   * @param response - The API response from signup endpoint
+   * @param expectedStatus - Expected HTTP status code (default: 201)
+   */
+  async verifySignupResponse(
+    response: ApiResponse,
+    expectedStatus: number = 201
+  ): Promise<void> {
+    expect(
+      response.status,
+      `Expected signup API status to be ${expectedStatus}, but got ${response.status}. Response body: ${JSON.stringify(response.body)}`
+    ).toBe(expectedStatus);
+  }
+
+  /**
+   * Verifies the OAuth token API response
+   * @param response - The API response from OAuth endpoint
+   * @param expectedStatus - Expected HTTP status code (default: 200)
+   */
+  async verifyOAuthResponse(
+    response: ApiResponse,
+    expectedStatus: number = 200
+  ): Promise<void> {
+    expect(
+      response.status,
+      `Expected OAuth API status to be ${expectedStatus}, but got ${response.status}. Response body: ${JSON.stringify(response.body)}`
+    ).toBe(expectedStatus);
+
+    // Validate OAuth response body contains all required fields
+    const oauthFields = [
+      'access_token',
+      'refresh_token',
+      'expires_in',
+      'token_type',
+      'scope',
+    ];
+    for (const field of oauthFields) {
+      const verification = verifyResponseBodyValue(
+        response.body,
+        field,
+        null,
+        'defined'
+      );
+      expect(verification.isValid, verification.errorMessage).toBeTruthy();
+    }
+  }
+
+  /**
+   * Verifies the account API response matches user data
+   * @param response - The API response from account endpoint
+   * @param userData - The user data used for signup
+   * @param expectedStatus - Expected HTTP status code (default: 200)
+   */
+  async verifyAccountResponse(
+    response: ApiResponse,
+    userData: SignupFormData,
+    expectedStatus: number = 200
+  ): Promise<void> {
+    expect(
+      response.status,
+      `Expected account API status to be ${expectedStatus}, but got ${response.status}. Response body: ${JSON.stringify(response.body)}`
+    ).toBe(expectedStatus);
+
+    // Validate account response body matches user data
+    const accountValidations = [
+      { field: 'firstName', expected: userData.firstName },
+      { field: 'lastName', expected: userData.lastName },
+      { field: 'email', expected: userData.email },
+    ];
+
+    for (const validation of accountValidations) {
+      const verification = verifyResponseBodyValue(
+        response.body,
+        validation.field,
+        validation.expected,
+        'contains'
+      );
+      expect(verification.isValid, verification.errorMessage).toBeTruthy();
+    }
+
+    // Validate region code (province mapping)
+    // Ontario maps to 'ON'
+    if (userData.province.includes('Ontario')) {
+      const regionVerification = verifyResponseBodyValue(
+        response.body,
+        'region',
+        'ON',
+        'contains'
+      );
+      expect(regionVerification.isValid, regionVerification.errorMessage).toBeTruthy();
+    }
+  }
+
+  /**
+   * Verifies the weak password error response
+   * @param response - The API response from signup endpoint
+   * @param expectedStatus - Expected HTTP status code (default: 401)
+   * @param expectedError - Expected error message (default: 'invalid password')
+   */
+  async verifyWeakPasswordResponse(
+    response: ApiResponse,
+    expectedStatus: number = 401,
+    expectedError: string = 'invalid password'
+  ): Promise<void> {
+    expect(
+      response.status,
+      `Expected API status to be ${expectedStatus} (weak password), but got ${response.status}. Response body: ${JSON.stringify(response.body)}`
+    ).toBe(expectedStatus);
+
+    // Verify error message in response body
+    const errorVerification = verifyResponseBodyValue(
+      response.body,
+      'error',
+      expectedError,
+      'contains'
+    );
+    expect(errorVerification.isValid, errorVerification.errorMessage).toBeTruthy();
+  }
+
+  /**
+   * Verifies all API responses for a successful signup flow
+   * @param signupResponse - The API response from signup endpoint
+   * @param oauthResponse - The API response from OAuth endpoint
+   * @param accountResponse - The API response from account endpoint
+   * @param userData - The user data used for signup
+   */
+  async verifySuccessfulSignupResponses(
+    signupResponse: ApiResponse,
+    oauthResponse: ApiResponse,
+    accountResponse: ApiResponse,
+    userData: SignupFormData
+  ): Promise<void> {
+    await this.verifySignupResponse(signupResponse, 201);
+    await this.verifyOAuthResponse(oauthResponse, 200);
+    await this.verifyAccountResponse(accountResponse, userData, 200);
   }
 }

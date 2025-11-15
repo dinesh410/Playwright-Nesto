@@ -13,22 +13,6 @@ import type { LocaleConfig } from "../types/locale.types";
 import { faker } from "@faker-js/faker";
 import { LandingPage } from "../pages/LandingPage";
 
-/**
- * Signup Test Suite
- *
- * This test suite uses:
- * - Page Object Model (POM) for maintainability
- * - Base fixtures for reusable setup
- * - JSON-based locale configuration (labels and URLs only)
- * - Test IDs in page objects (same across locales)
- * - Reusable API interception utilities
- * - Helper functions for common operations
- * - Environment variable (LOCALE) to determine language (default: 'en', use 'fr' for French)
- *
- * Run tests with different locales:
- *   LOCALE=en npx playwright test tests/specs/signup.spec.ts
- *   LOCALE=fr npx playwright test tests/specs/signup.spec.ts
- */
 
 /**
  * Creates test user data using Faker
@@ -459,7 +443,7 @@ test.describe("Signup Page", () => {
     expect(emailValue).toBe(formData.email);
   });
 
-  test("TC-017: should successfully submit form with valid data and validate API response", async ({
+  test("TC-017: should verify weak password error message and validate API response", async ({
     page,
     localeConfig,
   }) => {
@@ -486,19 +470,8 @@ test.describe("Signup Page", () => {
     console.log('API Response Body:', JSON.stringify(apiResponse.body, null, 2));
     console.log('User Data:', JSON.stringify(userData, null, 2));
 
-    // Validate API responses with detailed error messages
-    expect(
-      apiResponse.status,
-      `Expected API status to be 401 (weak password), but got ${apiResponse.status}. Response body: ${JSON.stringify(apiResponse.body)}`
-    ).toBe(401);
-    
-    const errorVerification = verifyResponseBodyValue(
-      apiResponse.body,
-      'error',
-      'invalid password',
-      'contains'
-    );
-    expect(errorVerification.isValid, errorVerification.errorMessage).toBeTruthy();
+    // Validate API response using reusable function
+    await signupPage.verifyWeakPasswordResponse(apiResponse, 401, 'invalid password');
 
     const errors = await signupPage.getValidationErrors();
     console.log('UI Validation Errors:', errors);
@@ -514,11 +487,11 @@ test.describe("Signup Page", () => {
     ).toContain(localeConfig.signup.errors.weakPasswordErrorMessage);
   });
 
-  test("TC-018: should successfully submit form with valid data and validate API response", async ({
+  test("TC-018: should verify successful signup with partner contact checked and validate API responses", async ({
     page,
     localeConfig,
   }) => {
-    // Use Ontarion Province this test.
+    // Use Ontario Province for this test.
 
     const password = generateValidPassword();
 
@@ -530,6 +503,7 @@ test.describe("Signup Page", () => {
       email: faker.internet.email().toLowerCase(),
       password: password,
       confirmPassword: password,
+      partnerContact: true,
     };
 
     const apiSignupPromise = setupApiInterception(page, "/api/accounts", "POST");
@@ -549,50 +523,122 @@ test.describe("Signup Page", () => {
     console.log('API Account Response:', JSON.stringify(apiAccountResponse, null, 2));
     console.log('User Data:', JSON.stringify(userData, null, 2));
 
-    // Validate API responses with detailed error messages
-    expect(
-      apiSignupResponse.status,
-      `Expected signup API status to be 201, but got ${apiSignupResponse.status}. Response body: ${JSON.stringify(apiSignupResponse.body)}`
-    ).toBe(201);
-    
-    expect(
-      apiAccountResponse.status,
-      `Expected account API status to be 200, but got ${apiAccountResponse.status}. Response body: ${JSON.stringify(apiAccountResponse.body)}`
-    ).toBe(200);
-    
-    expect(
-      apiOAuthResponse.status,
-      `Expected OAuth API status to be 200, but got ${apiOAuthResponse.status}. Response body: ${JSON.stringify(apiOAuthResponse.body)}`
-    ).toBe(200);
-
-    // Validate OAuth response body with detailed error messages
-    const oauthFields = ['access_token', 'refresh_token', 'expires_in', 'token_type', 'scope'];
-    for (const field of oauthFields) {
-      const verification = verifyResponseBodyValue(apiOAuthResponse.body, field, null, 'defined');
-      expect(verification.isValid, verification.errorMessage).toBeTruthy();
-    }
-
-    // Validate API response bodies with detailed error messages
-    const accountValidations = [
-      { field: 'firstName', expected: userData.firstName },
-      { field: 'lastName', expected: userData.lastName },
-      { field: 'region', expected: 'ON' },
-      { field: 'email', expected: userData.email },
-    ];
-
-    for (const validation of accountValidations) {
-      const verification = verifyResponseBodyValue(
-        apiAccountResponse.body,
-        validation.field,
-        validation.expected,
-        'contains'
-      );
-      expect(verification.isValid, verification.errorMessage).toBeTruthy();
-    }
+    // Validate all API responses using reusable function
+    await signupPage.verifySuccessfulSignupResponses(
+      apiSignupResponse,
+      apiOAuthResponse,
+      apiAccountResponse,
+      userData
+    );
 
     // Validate Page load with menu button visibility. 
     const landingPage = new LandingPage(page, localeConfig);
     await landingPage.waitForPageLoad();
     await expect(landingPage.menuButton).toBeVisible();
+  });
+
+  test("TC-019: should verify successful signup with partner contact unchecked and validate API responses", async ({
+    page,
+    localeConfig,
+  }) => {
+    // Use Ontario Province for this test.
+
+    const password = generateValidPassword();
+
+    const userData: SignupFormData = {
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      phoneNumber: faker.phone.number({ style: "international" }),
+      province: localeConfig.provinces.ONTARIO,
+      email: faker.internet.email().toLowerCase(),
+      password: password,
+      confirmPassword: password,
+      partnerContact: false,
+    };
+
+    const apiSignupPromise = setupApiInterception(page, "/api/accounts", "POST");
+    const apiOAuthPromise = setupApiInterception(page, "/oauth/token", "POST");
+    const apiAccountPromise = setupApiInterception(page, "/api/account", "GET");
+
+    await signupPage.fillForm(userData);
+    await signupPage.submit();
+
+    const apiSignupResponse = await apiSignupPromise;
+    const apiOAuthResponse = await apiOAuthPromise;
+    const apiAccountResponse = await apiAccountPromise;
+
+    // Log API responses for debugging
+    console.log('API Signup Response:', JSON.stringify(apiSignupResponse, null, 2));
+    console.log('API OAuth Response:', JSON.stringify(apiOAuthResponse, null, 2));
+    console.log('API Account Response:', JSON.stringify(apiAccountResponse, null, 2));
+    console.log('User Data:', JSON.stringify(userData, null, 2));
+
+    // Validate all API responses using reusable function
+    await signupPage.verifySuccessfulSignupResponses(
+      apiSignupResponse,
+      apiOAuthResponse,
+      apiAccountResponse,
+      userData
+    );
+
+    // Validate Page load with menu button visibility. 
+    const landingPage = new LandingPage(page, localeConfig);
+    await landingPage.waitForPageLoad();
+    await expect(landingPage.menuButton).toBeVisible();
+  });
+
+  test("TC-020: should verify signup with existing user email and validate API response", async ({
+    page,
+    localeConfig,
+  }) => {
+    // Use Ontario Province for this test.
+    // Note: This test requires a pre-existing user with a known email
+    // For a real scenario, you would need to create a user first or use a known test email
+
+    const password = generateValidPassword();
+    // TODO: This is a static email for testing purposes and I added it to the database for testing purposes.
+    const existingEmail = "test@example.com"; // In real scenario, this would be a known existing email
+
+    const userData: SignupFormData = {
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      phoneNumber: faker.phone.number({ style: "international" }),
+      province: localeConfig.provinces.ONTARIO,
+      email: existingEmail,
+      password: password,
+      confirmPassword: password,
+      partnerContact: false,
+    };
+
+    const apiSignupPromise = setupApiInterception(page, "/api/accounts", "POST");
+
+    await signupPage.fillForm(userData);
+    await signupPage.submit();
+
+    const apiSignupResponse = await apiSignupPromise;
+
+    // Log API response for debugging
+    console.log('API Signup Response:', JSON.stringify(apiSignupResponse, null, 2));
+    console.log('User Data:', JSON.stringify(userData, null, 2));
+
+    // Validate API response - should return error status (typically 409 Conflict or 400 Bad Request)
+    // The exact status code depends on the API implementation
+    expect(
+      apiSignupResponse.status,
+      `Expected API status to indicate duplicate email error 409, but got ${apiSignupResponse.status}. Response body: ${JSON.stringify(apiSignupResponse.body)}`
+    ).toBe(409);
+
+    // Verify error message indicates duplicate email
+    const errorVerification = verifyResponseBodyValue(
+      apiSignupResponse.body,
+      'error',
+      'duplicate entity',
+      'contains'
+    );
+    expect(errorVerification.isValid, errorVerification.errorMessage).toBeTruthy();
+
+    // Verify form remains on signup page (no redirect)
+    const url = page.url();
+    expect(url).toContain("/signup");
   });
 });

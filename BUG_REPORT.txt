@@ -2,311 +2,157 @@
 BUG REPORT - NESTO SIGNUP PAGE
 ================================================================================
 Date: 2025-01-XX
-Test Suite: signup.spec.ts
 Environment: https://app.qa.nesto.ca/signup
 Browser: Chrome, Firefox, Safari (WebKit)
 
 ================================================================================
-BUG #1: TYPO IN FRENCH PASSWORD REQUIREMENT TEXT
+
+BUG #1: NON-UNIQUE ID ATTRIBUTES
 ================================================================================
-Severity: Low (Cosmetic)
+Severity: Low
 Priority: Low
 
 Description:
-The French password requirement text contains a grammatical error.
-
-Location:
-- Page: https://app.qa.nesto.ca/fr/signup
-- Element: Password requirement text below password field
-
-Current Text:
-"Le mot de passe doit contenir au entre 12 et 32 caractères et contenir au moins une lettre majuscule, une lettre minuscule et un chiffre."
-
-Issue:
-The phrase "au entre" is grammatically incorrect. It should be "entre" (between).
-
-Expected Text:
-"Le mot de passe doit contenir entre 12 et 32 caractères et contenir au moins une lettre majuscule, une lettre minuscule et un chiffre."
+Multiple form fields share the same ID attribute (#field-1), violating HTML standards.
 
 Steps to Reproduce:
-1. Navigate to https://app.qa.nesto.ca/fr/signup
-2. Scroll to the password field
-3. Observe the password requirement text below the field
-
-Screenshot/Evidence:
-- See test: "should display password requirements in French"
-- The text is visible in the page snapshot
-
-================================================================================
-BUG #2: NON-UNIQUE ID ATTRIBUTES
-================================================================================
-Severity: Low (Accessibility/HTML Validation)
-Priority: Low
-
-Description:
-The page contains multiple elements with the same ID attribute, which violates HTML standards.
-
-Location:
-- Page: Both English and French signup pages
-- Console Warning: "Found 7 elements with non-unique id #field-1"
-
-Issue:
-Multiple form fields share the same ID (#field-1), which can cause:
-- Accessibility issues for screen readers
-- JavaScript selector conflicts
-- HTML validation errors
+1. Navigate to https://app.qa.nesto.ca/signup
+2. Open browser developer console
+3. Observe warning: "Found 7 elements with non-unique id #field-1"
 
 Expected Behavior:
 Each form field should have a unique ID attribute.
 
-Steps to Reproduce:
-1. Navigate to https://app.qa.nesto.ca/signup
-2. Open browser developer console
-3. Observe the warning message about non-unique IDs
-
-Evidence:
-- Console warning appears on page load
-- Test suite logs this warning during execution
+Impact:
+- Accessibility issues for screen readers
+- JavaScript selector conflicts
+- HTML validation errors
 
 ================================================================================
-BUG #3: MISSING AUTOCOMPLETE ATTRIBUTES
+
+BUG #2: NAME FIELDS ACCEPT SPECIAL CHARACTERS
 ================================================================================
-Severity: Low (Accessibility/UX)
-Priority: Low
-
-Description:
-Password input fields are missing autocomplete attributes, which affects browser password management.
-
-Location:
-- Page: Both English and French signup pages
-- Elements: Password and Confirm password fields
-
-Issue:
-Console shows verbose warnings:
-"Input elements should have autocomplete attributes (suggested: "new-password")"
-
-Expected Behavior:
-Password fields should have autocomplete="new-password" attribute to help browsers manage passwords correctly.
-
-Steps to Reproduce:
-1. Navigate to https://app.qa.nesto.ca/signup
-2. Open browser developer console
-3. Observe verbose warnings about autocomplete attributes
-
-Evidence:
-- Console warnings appear when interacting with password fields
-- Test suite logs these warnings
-
-================================================================================
-BUG #4: FIRST NAME AND LAST NAME FIELDS ALLOW SPECIAL CHARACTERS
-================================================================================
-Severity: Medium (Data Quality/Security)
+Severity: Medium
 Priority: Medium
 
 Description:
-First name and last name fields accept special characters, numbers, and symbols which should not be allowed in real-world scenarios. This can lead to data quality issues and potential security concerns.
-
-Location:
-- Page: Both English and French signup pages
-- Elements: First name and Last name input fields
-
-Issue:
-The form allows users to enter special characters (@, #, $, numbers, etc.) in name fields without validation. Examples of invalid input that are currently accepted:
-- "John@123"
-- "John#Doe"
-- "John$Doe"
-- "Doe@123"
-- "Doe#Smith"
-- "Doe$Smith"
-
-Expected Behavior:
-First name and last name fields should:
-- Only allow alphabetic characters (letters)
-- Allow common name characters like hyphens (-) and apostrophes (') for names like "O'Brien" or "Mary-Jane"
-- Reject special symbols (@, #, $, %, etc.)
-- Reject numbers
-- Show validation error messages when invalid characters are entered
-- Prevent form submission with invalid name formats
-
-Impact:
-- Data quality issues in the database
-- Potential security concerns (injection attacks)
-- Poor user experience (no feedback on invalid input)
-- Inconsistent data format across the system
+First name and last name fields accept special characters, numbers, and symbols without validation.
 
 Steps to Reproduce:
 1. Navigate to https://app.qa.nesto.ca/signup
-2. Enter special characters in First name field (e.g., "John@123")
-3. Enter special characters in Last name field (e.g., "Doe#Smith")
-4. Observe that the form accepts these values without validation errors
-5. Attempt to submit the form (it may or may not submit, but no validation error is shown)
+2. Enter "John@123" in First name field
+3. Enter "Doe#Smith" in Last name field
+4. Observe that form accepts these values without validation errors
 
-Test Case:
-- Test: "should reject special characters in first name and last name fields"
-- Location: tests/specs/signup.spec.ts
-- Status: Documents current bug behavior
+Expected Behavior:
+Name fields should:
+- Only allow letters, spaces, hyphens (-), and apostrophes (')
+- Reject special symbols (@, #, $, %, etc.) and numbers
+- Show validation error messages for invalid input
 
-Recommendations:
-1. Implement client-side validation for name fields
-2. Add pattern attribute or validation rules to restrict input
-3. Show clear error messages when invalid characters are entered
-4. Consider server-side validation as well for security
-5. Allow only: letters (A-Z, a-z), spaces, hyphens (-), and apostrophes (')
-6. Reject: numbers, special symbols (@, #, $, %, etc.)
+Impact:
+- Data quality issues
+- Potential security concerns
+- Poor user experience
 
-================================================================================
-POTENTIAL ISSUES (Requires Further Investigation)
-================================================================================
-
-1. API ENDPOINT IDENTIFICATION
-   - The signup API endpoint could not be definitively identified during initial testing
-   - Tests are set up to intercept various possible endpoints (/api/signup, /api/register, /api/user, /api/account, /api/auth, /api/create)
-   - Further investigation needed to confirm the exact endpoint and request/response structure
-
-2. PHONE NUMBER VALIDATION
-   - Phone number field appears to auto-format input (e.g., "1234567890" becomes "1 (234) 567-890")
-   - Validation error "Invalid value" appeared when testing with certain phone number formats
-   - Exact validation rules need to be confirmed
+Test Case: TC-005 (Skipped - documents bug behavior)
 
 ================================================================================
-BUG #5: PHONE NUMBER FIELD ALLOWS UNLIMITED INPUT WITH NO COUNTRY-BASED VALIDATION
+
+BUG #3: PHONE NUMBER FIELD ALLOWS UNLIMITED INPUT
 ================================================================================
-Severity: Medium (Data Quality/User Experience)
+Severity: Medium
 Priority: Medium
 
 Description:
-The phone number field allows users to enter unlimited numbers without validation based on the selected country. There is no length restriction, format validation, or country-specific validation rules. Users can enter any number of digits, letters, or special characters without receiving feedback.
-
-Location:
-- Page: Both English and French signup pages
-- Element: Phone number input field
-- Country Selector: Phone number country dropdown (defaults to Canada)
-
-Issue:
-1. No maximum length validation - users can enter unlimited digits
-2. No minimum length validation - users can enter very short numbers (e.g., "123")
-3. No country-specific validation - Canada is selected by default but validation doesn't enforce Canadian phone number format
-4. No format validation - accepts letters and special characters
-5. No real-time validation feedback - users don't know if their input is invalid until submission
-
-Examples of invalid input that are currently accepted:
-- "123" (too short for any country)
-- "12345678901234567890" (too long, 20 digits)
-- "1234567890123456789012345678901234567890" (extremely long, 40 digits)
-- "abc1234567" (contains letters)
-- "123-456-789" (invalid format)
-
-Expected Behavior:
-For Canadian phone numbers (default selection):
-- Minimum length: 10 digits (area code + 7 digits)
-- Maximum length: 11 digits (with country code 1)
-- Format: Should match Canadian phone number patterns
-  - Valid formats: (XXX) XXX-XXXX or XXX-XXX-XXXX
-  - Area codes: Valid Canadian area codes (e.g., 416, 647, 514, 613, etc.)
-- Should reject:
-  - Numbers that are too short (< 10 digits)
-  - Numbers that are too long (> 11 digits)
-  - Numbers containing letters
-  - Invalid area codes
-  - Numbers that don't match Canadian format
-
-For other countries:
-- Validation should adapt based on selected country
-- Each country should have its own validation rules
-- Format should match the selected country's phone number standards
-
-Impact:
-- Data quality issues in the database
-- Poor user experience (no feedback on invalid input)
-- Potential for incorrect phone numbers in the system
-- Difficulty in contacting users with invalid phone numbers
-- Inconsistent data format across the system
-- Wasted API calls if invalid numbers are submitted
+Phone number field allows unlimited input without country-based validation or length restrictions.
 
 Steps to Reproduce:
 1. Navigate to https://app.qa.nesto.ca/signup
-2. Observe that "Canada" is selected in the country dropdown
-3. Enter a very short phone number (e.g., "123") in the phone number field
-4. Observe that no validation error appears
-5. Enter a very long phone number (e.g., "12345678901234567890") in the phone number field
-6. Observe that no validation error appears
-7. Enter a phone number with letters (e.g., "abc1234567")
-8. Observe that no validation error appears
-9. Attempt to submit the form (validation may or may not occur at submission)
+2. Enter "123" (too short) in phone number field
+3. Observe no validation error
+4. Enter 30+ digits in phone number field
+5. Observe no validation error
 
-Test Cases:
-- Test: "should validate invalid phone number formats and show error messages"
-- Location: tests/specs/signup.spec.ts
-- Status: Documents current bug behavior
+Expected Behavior:
+For Canadian phone numbers (default):
+- Minimum: 10 digits
+- Maximum: 11 digits (with country code)
+- Should reject numbers that are too short/long
+- Should validate format and area codes
 
-Recommendations:
-1. Implement country-specific phone number validation
-2. Start with Canadian phone number validation (since Canada is the default)
-3. Add real-time validation feedback as user types
-4. Show clear error messages for invalid formats
-5. Enforce minimum and maximum length based on country
-6. Validate area codes for selected country
-7. Use a phone number validation library (e.g., libphonenumber-js) for accurate validation
-8. Consider format masking to guide users (e.g., (XXX) XXX-XXXX)
-9. Add server-side validation as well for security
-10. Extend validation to other countries as needed
+Impact:
+- Data quality issues
+- Poor user experience
+- Potential for incorrect phone numbers in system
 
-3. FORM DATA PERSISTENCE ON LANGUAGE SWITCH
-   - Test created to check if form data is preserved when switching languages
-   - Behavior may vary (form might be cleared or preserved)
-   - Needs confirmation of expected behavior
+Test Case: TC-007 (documents bug behavior)
 
 ================================================================================
-TEST COVERAGE SUMMARY
+
+BUG #4: GENERIC WEAK PASSWORD ERROR MESSAGE
+================================================================================
+Severity: Medium
+Priority: Medium
+
+Description:
+When a user submits a weak password, the error message is too generic ("invalid password") and doesn't provide clear guidance on why the password was rejected or how to fix it.
+
+Steps to Reproduce:
+1. Navigate to https://app.qa.nesto.ca/signup
+2. Fill form with valid data
+3. Enter a weak password (e.g., "Password1234")
+4. Submit form
+5. Observe generic error message: "invalid password"
+
+Expected Behavior:
+Error message should:
+- Clearly indicate the password is too weak
+- Provide specific guidance on password strength requirements
+- Explain what makes a password strong (e.g., "Password is too weak. Please use a stronger password with more complexity.")
+- Be user-friendly and actionable for new users
+
+Impact:
+- Poor user experience - users don't understand why password was rejected
+- Confusion for new users unfamiliar with password requirements
+- Increased support requests
+- Potential user abandonment
+
+Test Case: TC-017 (documents bug behavior)
+
 ================================================================================
 
-Positive Test Cases:
-✓ Valid form submission with all required fields
-✓ Form submission with partner contact checkbox checked
-✓ Province selection for all available provinces
-✓ Phone number formatting
-✓ Navigation to login page
-✓ Terms of Service and Privacy Policy links
-
-Negative Test Cases:
-✓ Empty form submission validation
-✓ Password too short (< 12 characters)
-✓ Password too long (> 32 characters)
-✓ Password missing uppercase letter
-✓ Password missing lowercase letter
-✓ Password missing number
-✓ Password confirmation mismatch
-✓ Invalid email formats
-
-Field and Label Coverage:
-✓ All form fields visible and accessible
-✓ All labels displayed correctly in English
-✓ All labels displayed correctly in French
-✓ Password requirements text displayed
-✓ Form heading displayed
-
-Language Switching:
-✓ Switch from English to French
-✓ Switch from French to English
-✓ Form fields and labels update correctly
-
-API Validation:
-✓ Intercepts API calls for account creation
-✓ Validates 201 status code (when API is found)
-✓ Validates response body contains form data (when available)
-
+BUG #5: GENERIC DUPLICATE EMAIL ERROR MESSAGE
 ================================================================================
-RECOMMENDATIONS
-================================================================================
+Severity: Medium
+Priority: Medium
 
-1. Fix the typo in French password requirement text
-2. Ensure all form fields have unique ID attributes
-3. Add autocomplete attributes to password fields
-4. Document the exact API endpoint and response structure for signup
-5. Clarify phone number validation rules and expected formats
-6. Document expected behavior for form data when switching languages
+Description:
+When a user attempts to signup with an email that already exists, the error message is too generic ("duplicate entity") and doesn't provide clear guidance on what went wrong or how to fix it.
+
+Steps to Reproduce:
+1. Navigate to https://app.qa.nesto.ca/signup
+2. Fill form with valid data
+3. Enter an email that already exists in the system (e.g., "test@example.com")
+4. Submit form
+5. Observe generic error message.
+
+Expected Behavior:
+Error message should:
+- Clearly indicate that the email address is already registered
+- Provide actionable guidance (e.g., "This email address is already registered. Please use a different email or try logging in.")
+- Be user-friendly and understandable for new users
+- Suggest alternative actions (login, use different email, reset password)
+
+Impact:
+- Poor user experience - users don't understand what "duplicate entity" means
+- Confusion for users who may have forgotten they already have an account
+- Increased support requests
+- Potential user abandonment
+- Users may try to create multiple accounts with slight email variations
+
+Test Case: TC-020 (documents bug behavior)
 
 ================================================================================
 END OF BUG REPORT
 ================================================================================
-
